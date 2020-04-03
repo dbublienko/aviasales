@@ -8,7 +8,9 @@ const formSearch = document.querySelector(".form-search"),
     dropdownCitiesTo = formSearch.querySelector(".dropdown__cities-to"),
     inputDateDepart = formSearch.querySelector(".input__date-depart"),
     cheapestTicket = document.getElementById("cheapest-ticket"),
-    otherCheapTickets = document.getElementById("other-cheap-tickets");
+    otherCheapTickets = document.getElementById("other-cheap-tickets"),
+    body = document.querySelector("body"),
+    errorMessage = document.getElementsByClassName("error-message");
 
 //Данные
 const citiesApi = "http://api.travelpayouts.com/data/ru/cities.json",
@@ -16,7 +18,7 @@ const citiesApi = "http://api.travelpayouts.com/data/ru/cities.json",
     API_KEY = "f7a3c36923af8b4859f9b0e4030a9fe6",
     calendar = "http://min-prices.aviasales.ru/calendar_preload",
     MAX_COUNT = 10;
-    //citiesApi = "dataBase/cities.json";
+//citiesApi = "dataBase/cities.json";
 
 let city = [];
 
@@ -27,7 +29,7 @@ const getData = (url, callback, reject = console.error) => {
     const request = new XMLHttpRequest();
 
     request.open("GET", url);
-    
+
     request.addEventListener("readystatechange", () => {
         if (request.readyState !== 4) return;
 
@@ -45,10 +47,10 @@ const getData = (url, callback, reject = console.error) => {
 const showCity = (input, list) => {
     list.textContent = "";
 
-    if (input.value !== "") {   
+    if (input.value !== "") {
         const filterCity = city.filter((item) => {
-                const fixedItem = item.name.toLowerCase();
-                return fixedItem.startsWith(input.value.toLowerCase());
+            const fixedItem = item.name.toLowerCase();
+            return fixedItem.startsWith(input.value.toLowerCase());
         });
 
         filterCity.forEach((item) => {
@@ -66,6 +68,16 @@ const selectCity = (event, input, list) => {
     if (target.tagName.toLowerCase() === "li") {
         input.value = target.textContent;
         list.textContent = "";
+    }
+};
+
+const incorrectCity = (input) => {
+    input.style.backgroundColor = "#d43535";
+
+    if (input.getAttribute("class").includes("input__cities-from")) {
+        errorMessage[0].classList.add("error-message_enable");
+    } else {
+        errorMessage[1].classList.add("error-message_enable");
     }
 };
 
@@ -125,7 +137,7 @@ const createCard = (data) => {
         <div class="ticket__wrapper">
             <div class="left-side">
                 <a href="${getLinkAviasales(data)}" target="_blank" class="button button__buy">Купить
-                    за ${data.value}₽</a>
+                    за ${Math.ceil(data.value / 2.6)}₴</a>
             </div>
             <div class="right-side">
                 <div class="block-left">
@@ -145,7 +157,7 @@ const createCard = (data) => {
         </div>
         `;
     } else {
-        deep = "<h3>К сожалению, на текущую дату билетов не нашлось!</h3>";
+        deep = "<h3>К сожалению, билетов не нашлось!</h3>";
     }
 
     ticket.insertAdjacentHTML("afterbegin", deep);
@@ -169,10 +181,13 @@ const renderCheapYear = (cheapTickets) => {
 
     cheapTickets.sort((a, b) => a.value - b.value);
 
-    for (let i = 0; i < cheapTickets.length && i < MAX_COUNT; i++) {
+    let i = 0;
+    do {
         const ticket = createCard(cheapTickets[i]);
         otherCheapTickets.append(ticket);
-    }
+        i++;
+    } while (i < cheapTickets.length && i < MAX_COUNT)
+
     console.log(cheapTickets);
 };
 
@@ -189,6 +204,10 @@ const renderCheap = (data, date) => {
 };
 
 //Обработчики событий
+window.addEventListener("click", () => {
+    dropdownCitiesFrom.textContent = "";
+    dropdownCitiesTo.textContent = "";
+});
 
 inputCitiesFrom.addEventListener("input", () => {
     showCity(inputCitiesFrom, dropdownCitiesFrom);
@@ -223,16 +242,29 @@ formSearch.addEventListener("submit", (event) => {
     };
 
     if (formData.from && formData.to) {
+        inputCitiesFrom.style.backgroundColor = "#1e3c53";
+        errorMessage[0].classList.remove("error-message_enable");
+
+        inputCitiesTo.style.backgroundColor = "#1e3c53";
+        errorMessage[1].classList.remove("error-message_enable");
+
         const requestData = `?depart_date=${formData.when}&origin=${formData.from.code}&destination=${formData.to.code}&one_way=true&toke=${API_KEY}`;
-    
+
         getData(proxy + calendar + requestData, (data) => {
             renderCheap(data, formData.when);
         }, (error) => {
-            alert("В этом направлении нет рейсов!");
+            cheapestTicket.innerHTML = "<h3 class='ticket'>В этом направлении нет рейсов!</h3>";
+            cheapestTicket.style.display = "block";
+            otherCheapTickets.textContent = "";
             console.error(error);
         });
+    } else if (!formData.from && !formData.to) {
+        incorrectCity(inputCitiesFrom);
+        incorrectCity(inputCitiesTo);
+    } else if (!formData.from) {
+        incorrectCity(inputCitiesFrom);
     } else {
-        alert("Введите корректное название города!");
+        incorrectCity(inputCitiesTo);
     }
 
 });
@@ -247,10 +279,10 @@ getData(proxy + citiesApi, (data) => {
     city.sort((a, b) => {
         if (a.name > b.name) {
             return 1;
-          }
-          if (a.name < b.name) {
+        }
+        if (a.name < b.name) {
             return -1;
-          }
-          return 0;
+        }
+        return 0;
     });
 });
