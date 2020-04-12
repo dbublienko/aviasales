@@ -103,7 +103,7 @@ const getChanges = (num) => {
 };
 
 const getLinkAviasales = (data) => {
-    let link = "https://www.aviasales.ru/search/";
+    let link = "https://www.aviasales.ua/search/";
 
     link += data.origin;
 
@@ -137,7 +137,7 @@ const createCard = (data) => {
         <div class="ticket__wrapper">
             <div class="left-side">
                 <a href="${getLinkAviasales(data)}" target="_blank" class="button button__buy">Купить
-                    за ${Math.ceil(data.value / 2.6)}₴</a>
+                    за ${Math.ceil(data.value / 2.72)}₴</a>
             </div>
             <div class="right-side">
                 <div class="block-left">
